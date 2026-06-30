@@ -1,0 +1,52 @@
+"""
+Export captions as SRT, VTT, or plain TXT.
+"""
+from datetime import timedelta
+
+
+def _format_srt_timestamp(seconds: float) -> str:
+    td = timedelta(seconds=seconds)
+    total_ms = int(td.total_seconds() * 1000)
+    hours, rem = divmod(total_ms, 3_600_000)
+    minutes, rem = divmod(rem, 60_000)
+    secs, ms = divmod(rem, 1000)
+    return f"{hours:02}:{minutes:02}:{secs:02},{ms:03}"
+
+
+def _format_vtt_timestamp(seconds: float) -> str:
+    td = timedelta(seconds=seconds)
+    total_ms = int(td.total_seconds() * 1000)
+    hours, rem = divmod(total_ms, 3_600_000)
+    minutes, rem = divmod(rem, 60_000)
+    secs, ms = divmod(rem, 1000)
+    return f"{hours:02}:{minutes:02}:{secs:02}.{ms:03}"
+
+
+class ExportService:
+
+    @staticmethod
+    def to_srt(segments: list[dict], text_key: str = "tanglish_text") -> str:
+        lines = []
+        for idx, seg in enumerate(segments, start=1):
+            lines.append(str(idx))
+            lines.append(
+                f"{_format_srt_timestamp(seg['start'])} --> {_format_srt_timestamp(seg['end'])}"
+            )
+            lines.append(seg[text_key])
+            lines.append("")
+        return "\n".join(lines)
+
+    @staticmethod
+    def to_vtt(segments: list[dict], text_key: str = "tanglish_text") -> str:
+        lines = ["WEBVTT", ""]
+        for seg in segments:
+            lines.append(
+                f"{_format_vtt_timestamp(seg['start'])} --> {_format_vtt_timestamp(seg['end'])}"
+            )
+            lines.append(seg[text_key])
+            lines.append("")
+        return "\n".join(lines)
+
+    @staticmethod
+    def to_txt(segments: list[dict], text_key: str = "tanglish_text") -> str:
+        return "\n".join(seg[text_key] for seg in segments)
