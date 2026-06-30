@@ -1,32 +1,42 @@
-import { Check } from "lucide-react";
-
-const PLANS = [
-  { name: "Free", price: "$0", period: "/mo", features: ["3 videos / month", "Up to 5 min per video", "Tanglish captions", "SRT/VTT/TXT export"], cta: "Start Free" },
-  { name: "Creator", price: "$15", period: "/mo", features: ["30 videos / month", "Up to 20 min per video", "AI punctuation & emoji", "Burned-in MP4 export", "Priority queue"], cta: "Go Creator", highlight: true },
-  { name: "Pro", price: "$39", period: "/mo", features: ["Unlimited videos", "Up to 60 min per video", "Bulk export", "Team seats (3)", "API access"], cta: "Go Pro" },
-];
-
-export default function PricingPage() {
-  return (
-    <main className="max-w-6xl mx-auto px-6 py-16">
-      <h1 className="text-3xl font-bold text-center mb-2">Simple, Creator-Friendly Pricing</h1>
-      <p className="text-white/50 text-center mb-12">Cancel anytime. No hidden fees.</p>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {PLANS.map((p) => (
-          <div key={p.name} className={`glass-card p-8 ${p.highlight ? "border-primary-light ring-1 ring-primary/40" : ""}`}>
-            <h2 className="font-semibold text-lg mb-1">{p.name}</h2>
-            <p className="mb-6"><span className="text-3xl font-bold">{p.price}</span><span className="text-white/40">{p.period}</span></p>
-            <ul className="space-y-3 mb-8">
-              {p.features.map((f) => (
-                <li key={f} className="flex items-center gap-2 text-sm text-white/70">
-                  <Check size={16} className="text-accent" /> {f}
-                </li>
-              ))}
-            </ul>
-            <button className={p.highlight ? "btn-primary w-full" : "btn-ghost w-full"}>{p.cta}</button>
-          </div>
-        ))}
-      </div>
-    </main>
-  );
+{
+  "name": "tanglish-caption-ai-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
+  },
+  "dependencies": {
+    "next": "15.5.19",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.3",
+    "@clerk/nextjs": "^6.2.0",
+    "@prisma/client": "^5.21.1",
+    "prisma": "^5.21.1",
+    "tailwindcss": "^3.4.14",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "framer-motion": "^11.11.10",
+    "lucide-react": "^0.453.0",
+    "react-dropzone": "^14.2.10",
+    "axios": "^1.7.7",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.5.4",
+    "zustand": "^5.0.0",
+    "@radix-ui/react-slider": "^1.2.0",
+    "@radix-ui/react-select": "^2.1.2",
+    "@radix-ui/react-tabs": "^1.1.1",
+    "@radix-ui/react-dialog": "^1.1.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.9",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1"
+  }
 }

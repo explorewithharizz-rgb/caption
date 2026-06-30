@@ -1,63 +1,22 @@
-"""
-Manual re-transcription / status polling endpoints.
-"""
-from fastapi import APIRouter, Depends, HTTPException
-from app.core.security import get_current_user
-from app.models.database import SessionLocal
-from app.models.project import Project, CaptionSegment
+"use client";
+import { useState } from "react";
 
-router = APIRouter()
-
-
-@router.get("/status/{project_id}")
-def get_status(project_id: str, user=Depends(get_current_user)):
-    db = SessionLocal()
-    try:
-        project = db.query(Project).filter(Project.id == project_id).first()
-        if not project:
-            raise HTTPException(404, "Project not found")
-        return {
-            "project_id": project.id,
-            "status": project.status,
-            "error_message": project.error_message,
-        }
-    finally:
-        db.close()
-
-
-@router.get("/segments/{project_id}")
-def get_segments(project_id: str, user=Depends(get_current_user)):
-    db = SessionLocal()
-    try:
-        segs = (
-            db.query(CaptionSegment)
-            .filter(CaptionSegment.project_id == project_id)
-            .order_by(CaptionSegment.start_time)
-            .all()
-        )
-        return [
-            {
-                "id": s.id, "start": s.start_time, "end": s.end_time,
-                "tamil_text": s.tamil_text, "tanglish_text": s.tanglish_text,
-                "edited": s.edited,
-            }
-            for s in segs
-        ]
-    finally:
-        db.close()
-
-
-@router.post("/retry/{project_id}")
-def retry_transcription(project_id: str, user=Depends(get_current_user)):
-    from app.workers.transcription_worker import process_video_task
-    db = SessionLocal()
-    try:
-        project = db.query(Project).filter(Project.id == project_id).first()
-        if not project:
-            raise HTTPException(404, "Project not found")
-        project.status = "queued"
-        db.commit()
-    finally:
-        db.close()
-    # s3_key reconstruction omitted for brevity — store it on Project in production
-    return {"status": "queued"}
+export default function ContactPage() {
+  const [sent, setSent] = useState(false);
+  return (
+    <main className="max-w-xl mx-auto px-6 py-16">
+      <h1 className="text-3xl font-bold mb-2">Contact Us</h1>
+      <p className="text-white/50 mb-8">Questions, feedback, or partnership ideas — we'd love to hear from you.</p>
+      {sent ? (
+        <div className="glass-card p-8 text-center text-accent">Thanks! We'll get back to you within 24 hours.</div>
+      ) : (
+        <form onSubmit={(e) => { e.preventDefault(); setSent(true); }} className="glass-card p-8 space-y-4">
+          <input required placeholder="Your name" className="w-full bg-white/5 rounded-lg px-4 py-3 text-sm outline-none" />
+          <input required type="email" placeholder="Email" className="w-full bg-white/5 rounded-lg px-4 py-3 text-sm outline-none" />
+          <textarea required placeholder="Message" rows={5} className="w-full bg-white/5 rounded-lg px-4 py-3 text-sm outline-none" />
+          <button className="btn-primary w-full">Send Message</button>
+        </form>
+      )}
+    </main>
+  );
+}

@@ -1,116 +1,112 @@
-import Link from "next/link";
-import { Sparkles, Upload, Wand2, Download, Star } from "lucide-react";
+"use client";
 
-const FEATURES = [
-  { icon: Upload, title: "Drag & Drop Upload", desc: "MP4, MOV, AVI, MKV up to 500MB — instant progress tracking." },
-  { icon: Wand2, title: "AI Tamil → Tanglish", desc: "Whisper-powered transcription with natural, creator-style Tanglish conversion." },
-  { icon: Sparkles, title: "Smart Caption Editor", desc: "Edit, merge, split, and style captions with real-time mobile preview." },
-  { icon: Download, title: "Export Anywhere", desc: "SRT, VTT, TXT, or burn captions directly into your final MP4." },
-];
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import VideoUploader from "@/components/VideoUploader";
+import { Clock, FileVideo, BarChart3, CreditCard } from "lucide-react";
 
-const TESTIMONIALS = [
-  { name: "Karthik R.", handle: "@karthikvlogs", quote: "Cut my captioning time from 2 hours to 5 minutes per Reel." },
-  { name: "Priya S.", handle: "@priyacooks_ta", quote: "The Tanglish actually sounds like how I talk. No more robotic captions." },
-  { name: "Arun M.", handle: "@arunshorts", quote: "Burned-in captions look so clean on Shorts. Engagement went up noticeably." },
-];
+interface ProjectRow {
+  id: string;
+  title: string;
+  status: "queued" | "processing" | "completed" | "failed";
+  video_url: string | null;
+  created_at: string;
+}
 
-export default function LandingPage() {
+const STATUS_COLOR: Record<string, string> = {
+  queued: "text-yellow-400 bg-yellow-400/10",
+  processing: "text-accent bg-accent/10",
+  completed: "text-green-400 bg-green-400/10",
+  failed: "text-red-400 bg-red-400/10",
+};
+
+export default function DashboardPage() {
+  const router = useRouter();
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [usage, setUsage] = useState({ minutes_processed: 0, videos_processed: 0 });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [projRes, usageRes] = await Promise.all([
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/projects`),
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/usage`),
+        ]);
+        setProjects(projRes.data);
+        setUsage(usageRes.data);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchData();
+  }, []);
+
   return (
-    <main className="overflow-hidden">
-      {/* Nav */}
-      <nav className="flex items-center justify-between px-6 md:px-12 py-5 max-w-7xl mx-auto">
-        <div className="flex items-center gap-2 font-bold text-xl">
-          <Sparkles className="text-primary-light" size={22} />
-          <span>Tanglish Caption AI</span>
+    <main className="max-w-6xl mx-auto px-6 py-10">
+      <header className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <div className="flex gap-3 text-sm text-white/60">
+          <a href="/profile" className="btn-ghost py-2 px-4">Profile</a>
+          <a href="/pricing" className="btn-ghost py-2 px-4 flex items-center gap-1"><CreditCard size={16}/> Plan</a>
         </div>
-        <div className="hidden md:flex items-center gap-8 text-sm text-white/70">
-          <Link href="/pricing" className="hover:text-white transition">Pricing</Link>
-          <Link href="/contact" className="hover:text-white transition">Contact</Link>
-          <Link href="/dashboard" className="hover:text-white transition">Dashboard</Link>
-        </div>
-        <Link href="/dashboard" className="btn-primary text-sm py-2.5 px-5">Get Started Free</Link>
-      </nav>
+      </header>
 
-      {/* Hero */}
-      <section className="px-6 md:px-12 max-w-5xl mx-auto text-center pt-16 pb-24 animate-fade-in">
-        <div className="inline-flex items-center gap-2 glass-card px-4 py-1.5 text-xs text-white/70 mb-6">
-          <Sparkles size={14} className="text-accent" /> AI-Powered Tamil Caption Generator
-        </div>
-        <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-6">
-          Turn Tamil Speech into{" "}
-          <span className="gradient-text">Tanglish Captions</span> in Minutes
-        </h1>
-        <p className="text-white/60 text-lg max-w-2xl mx-auto mb-10">
-          Built for Instagram Reels, YouTube Shorts, and TikTok creators. Upload your video,
-          get accurate Whisper-powered Tamil transcription, and natural, engagement-ready
-          Tanglish captions — editable, styleable, and exportable instantly.
-        </p>
-        <div className="flex items-center justify-center gap-4">
-          <Link href="/dashboard" className="btn-primary animate-glow">Upload Your First Video</Link>
-          <Link href="/pricing" className="btn-ghost">See Pricing</Link>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="px-6 md:px-12 max-w-7xl mx-auto pb-24">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {FEATURES.map((f) => (
-            <div key={f.title} className="glass-card p-6 animate-slide-up hover:border-primary-light/40 transition">
-              <f.icon className="text-primary-light mb-4" size={28} />
-              <h3 className="font-semibold text-lg mb-2">{f.title}</h3>
-              <p className="text-white/60 text-sm">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Example conversion */}
-      <section className="px-6 md:px-12 max-w-4xl mx-auto pb-24">
-        <div className="glass-card p-8 md:p-10">
-          <h2 className="text-2xl font-bold mb-6 text-center">See It In Action</h2>
-          <div className="space-y-4">
-            {[
-              ["வணக்கம் நண்பர்களே", "Vanakkam Nanbargale"],
-              ["எப்படி இருக்கீங்க", "Epdi Irukeenga"],
-              ["இன்று ஒரு புதிய வீடியோ", "Inniku Oru Pudhiya Video"],
-            ].map(([ta, tg]) => (
-              <div key={ta} className="flex items-center justify-between bg-white/5 rounded-xl px-5 py-4">
-                <span className="text-white/50">{ta}</span>
-                <span className="text-accent font-medium">{tg}</span>
-              </div>
-            ))}
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+        <div className="glass-card p-5 flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-primary/15"><FileVideo className="text-primary-light" /></div>
+          <div>
+            <p className="text-2xl font-bold">{usage.videos_processed}</p>
+            <p className="text-sm text-white/50">Videos processed</p>
           </div>
         </div>
+        <div className="glass-card p-5 flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-accent/15"><Clock className="text-accent" /></div>
+          <div>
+            <p className="text-2xl font-bold">{usage.minutes_processed.toFixed(1)}</p>
+            <p className="text-sm text-white/50">Minutes transcribed this month</p>
+          </div>
+        </div>
+        <div className="glass-card p-5 flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-pink-400/15"><BarChart3 className="text-accent-pink" /></div>
+          <div>
+            <p className="text-2xl font-bold">{projects.length}</p>
+            <p className="text-sm text-white/50">Total projects</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Upload */}
+      <section className="mb-12">
+        <h2 className="text-lg font-semibold mb-4">Upload a New Video</h2>
+        <VideoUploader onUploaded={(id) => router.push(`/editor/${id}`)} />
       </section>
 
-      {/* Testimonials */}
-      <section className="px-6 md:px-12 max-w-7xl mx-auto pb-24">
-        <h2 className="text-2xl font-bold text-center mb-10">Loved by Tamil Creators</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {TESTIMONIALS.map((t) => (
-            <div key={t.handle} className="glass-card p-6">
-              <div className="flex gap-1 mb-3 text-accent">
-                {Array.from({ length: 5 }).map((_, i) => <Star key={i} size={14} fill="currentColor" />)}
+      {/* Project history */}
+      <section>
+        <h2 className="text-lg font-semibold mb-4">Recent Uploads</h2>
+        <div className="glass-card divide-y divide-white/5">
+          {projects.length === 0 && (
+            <p className="p-6 text-white/40 text-sm">No projects yet. Upload your first video above.</p>
+          )}
+          {projects.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => router.push(`/editor/${p.id}`)}
+              className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition text-left"
+            >
+              <div>
+                <p className="font-medium">{p.title}</p>
+                <p className="text-xs text-white/40">{new Date(p.created_at).toLocaleString()}</p>
               </div>
-              <p className="text-white/80 mb-4">"{t.quote}"</p>
-              <p className="text-sm text-white/50">{t.name} · {t.handle}</p>
-            </div>
+              <span className={`text-xs px-3 py-1 rounded-full font-medium ${STATUS_COLOR[p.status]}`}>
+                {p.status}
+              </span>
+            </button>
           ))}
         </div>
       </section>
-
-      {/* CTA */}
-      <section className="px-6 md:px-12 max-w-4xl mx-auto pb-24 text-center">
-        <div className="glass-card p-12">
-          <h2 className="text-3xl font-bold mb-4">Ready to caption your next video?</h2>
-          <p className="text-white/60 mb-8">No credit card required for your first 3 videos.</p>
-          <Link href="/dashboard" className="btn-primary">Start Captioning Free</Link>
-        </div>
-      </section>
-
-      <footer className="px-6 md:px-12 py-8 text-center text-white/40 text-sm border-t border-white/5">
-        © 2026 Tanglish Caption AI. All rights reserved.
-      </footer>
     </main>
   );
 }

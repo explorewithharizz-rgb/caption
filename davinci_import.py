@@ -1,72 +1,80 @@
 """
-Whisper-based Tamil speech recognition with word/segment level timestamps.
+Handles extracting clean mono 16kHz WAV audio from uploaded video files
+using FFmpeg, and burning final captions back into video.
 """
-import whisper
+import ffmpeg
+import os
+import uuid
 from app.core.config import settings
-from functools import lru_cache
 
 
-@lru_cache(maxsize=1)
-def get_model():
-    """Load Whisper model once and cache (expensive operation)."""
-    return whisper.load_model(settings.WHISPER_MODEL, device=settings.WHISPER_DEVICE)
-
-
-class WhisperService:
+class FFmpegService:
 
     @staticmethod
-    def transcribe(audio_path: str, language: str = "ta") -> dict:
-        """
-        Transcribe Tamil audio with segment-level timestamps.
-
-        Returns:
-            {
-              "language": "ta",
-              "segments": [
-                 {"id": 0, "start": 0.0, "end": 2.4, "text": "வணக்கம் நண்பர்களே"},
-                 ...
-              ]
-            }
-        """
-        model = get_model()
-        result = model.transcribe(
-            audio_path,
-            language=language,       # force Tamil; pass None to auto-detect
-            task="transcribe",
-            word_timestamps=True,
-            verbose=False,
-            condition_on_previous_text=True,
-            temperature=0.0,
+    def extract_audio(video_path: str, output_dir: str = "/tmp") -> str:
+        """Extract mono 16kHz WAV audio — optimal format for Whisper."""
+        audio_path = os.path.join(output_dir, f"{uuid.uuid4()}.wav")
+        (
+            ffmpeg
+            .input(video_path)
+            .output(
+                audio_path,
+                ac=1,            # mono
+                ar=16000,        # 16kHz sample rate
+                format="wav",
+                loglevel="error",
+            )
+            .overwrite_output()
+            .run()
         )
+        return audio_path
 
-        segments = []
-        for seg in result["segments"]:
-            segments.append({
-                "id": seg["id"],
-                "start": round(seg["start"], 2),
-                "end": round(seg["end"], 2),
-                "text": seg["text"].strip(),
-                "words": [
-                    {
-                        "word": w["word"].strip(),
-                        "start": round(w["start"], 2),
-                        "end": round(w["end"], 2),
-                    }
-                    for w in seg.get("words", [])
-                ],
-            })
-
+    @staticmethod
+    def get_video_metadata(video_path: str) -> dict:
+        probe = ffmpeg.probe(video_path)
+        video_stream = next(
+            (s for s in probe["streams"] if s["codec_type"] == "video"), None
+        )
         return {
-            "language": result.get("language", language),
-            "segments": segments,
+            "duration": float(probe["format"].get("duration", 0)),
+            "width": video_stream.get("width") if video_stream else None,
+            "height": video_stream.get("height") if video_stream else None,
+            "fps": eval(video_stream.get("r_frame_rate", "0/1")) if video_stream else None,
+            "size_bytes": int(probe["format"].get("size", 0)),
         }
 
     @staticmethod
-    def detect_language(audio_path: str) -> str:
-        """Auto-detect spoken language (used when user doesn't pre-select Tamil)."""
-        model = get_model()
-        audio = whisper.load_audio(audio_path)
-        audio = whisper.pad_or_trim(audio)
-        mel = whisper.log_mel_spectrogram(audio).to(model.device)
-        _, probs = model.detect_language(mel)
-        return max(probs, key=probs.get)
+    def burn_captions(video_path: str, srt_path: str, output_path: str, style: dict | None = None):
+        """
+        Burn an SRT file into the video as hardcoded subtitles using
+        FFmpeg's subtitles filter (libass), with style overrides.
+        """
+        style = style or {}
+        font_size = style.get("font_size", 24)
+        font_name = style.get("font_family", "Arial")
+        primary_color = style.get("primary_color", "&H00FFFFFF")  # white
+        outline_color = style.get("outline_color", "&H00000000")  # black
+        outline_width = style.get("outline_width", 2)
+        alignment = style.get("alignment", 2)  # 2 = bottom center, 8 = top, 5 = mid
+
+        force_style = (
+            f"FontName={font_name},FontSize={font_size},"
+            f"PrimaryColour={primary_color},OutlineColour={outline_color},"
+            f"Outline={outline_width},Alignment={alignment},BorderStyle=1"
+        )
+
+        escaped_srt = srt_path.replace(":", "\\:").replace("'", "\\'")
+
+        (
+            ffmpeg
+            .input(video_path)
+            .output(
+                output_path,
+                vf=f"subtitles='{escaped_srt}':force_style='{force_style}'",
+                acodec="copy",
+                loglevel="error",
+            )
+            .overwrite_output()
+            .run()
+        )
+        return output_path

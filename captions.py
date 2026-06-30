@@ -1,8 +1,15 @@
-FROM node:20-slim
-WORKDIR /app
-COPY package.json .
-RUN npm install
-COPY . .
-RUN npx prisma generate
-EXPOSE 3000
-CMD ["npm", "run", "dev"]
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "*.s3.*.amazonaws.com" },
+      { protocol: "https", hostname: "img.clerk.com" },
+      { protocol: "https", hostname: "*.clerk.accounts.dev" },
+    ],
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+};
+
+module.exports = nextConfig;
